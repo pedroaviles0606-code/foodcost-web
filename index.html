@@ -102,6 +102,7 @@ input[type=email],input[type=password]{background:var(--inp);color:var(--ink);bo
     <label style="width:160px">Desde<input type="date" id="cIni"></label>
     <label style="width:160px">Hasta<input type="date" id="cFin"></label>
     <label class="chk"><input type="checkbox" id="cIgv"> Precios incluyen IGV (18%)</label>
+    <label style="width:150px">Recargo consumo %<input type="number" id="cRc" step="1" min="0" max="30"></label>
   </div>
   <nav id="nav">
     <a href="#resumen" data-t="resumen">Resumen</a><a href="#insumos" data-t="insumos">Insumos</a><a href="#recetas" data-t="recetas">Recetas</a><a href="#ventas" data-t="ventas">Ventas y consumo real</a><a href="#carga" data-t="carga">Carga de datos (Excel)</a>
@@ -129,7 +130,8 @@ input[type=email],input[type=password]{background:var(--inp);color:var(--ink);bo
 <section data-tab="insumos">
   <div class="card">
     <div class="row" style="margin-bottom:12px"><div><h2>Insumos</h2><p class="hint">Costo de compra sin IGV. Costo aprovechable = costo ÷ (1 − merma).</p></div><span class="sp"></span>
-      <input type="text" id="qIns" placeholder="Buscar insumo" style="max-width:220px"><button class="btn" id="addIns">+ Agregar insumo</button></div>
+      <input type="text" id="qIns" placeholder="Buscar insumo" style="max-width:220px"><select id="fIns" style="max-width:220px"></select><button class="btn" id="addIns">+ Agregar insumo</button></div>
+    <p class="hint" id="insInfo"></p><datalist id="dlCat"></datalist>
     <div class="scroll"><table><thead><tr><th>Código</th><th>Insumo</th><th>Categoría</th><th>Unidad</th><th class="n">Costo S/</th><th class="n">Merma %</th><th class="n">Costo aprovechable</th><th></th></tr></thead><tbody id="tIns"></tbody></table></div>
   </div>
 </section>
@@ -144,14 +146,14 @@ input[type=email],input[type=password]{background:var(--inp);color:var(--ink);bo
     <div class="scroll"><table><thead><tr><th>Plato</th><th class="n">Unidades</th><th class="n">Precio</th><th class="n">Venta neta</th><th class="n">Costo teórico</th></tr></thead><tbody id="tVen"></tbody></table></div>
     <div id="sinReceta"></div>
   </div>
-  <div class="card"><div class="row"><div><h2>Consumo real vs teórico</h2><p class="hint">Real = inicial + compras − final. Teórico = ventas × receta ÷ (1 − merma). Valorizado al costo de compra.</p></div><span class="sp"></span><button class="btn ghost sm" id="sortCon">Ordenar por pérdida</button></div>
+  <div class="card"><div class="row"><div><h2>Consumo real vs teórico</h2><p class="hint">Real = inicial + compras − final. Teórico = ventas × receta ÷ (1 − merma). Valorizado al costo de compra.</p></div><span class="sp"></span><button class="btn ghost sm" id="allCon">Mostrar todos</button><button class="btn ghost sm" id="sortCon">Ordenar por pérdida</button></div><p class="hint" id="conInfo"></p>
     <div class="scroll"><table><thead><tr><th>Insumo</th><th>Unid.</th><th class="n">Inv. inicial</th><th class="n">Compras</th><th class="n">Inv. final</th><th class="n">Real</th><th class="n">Teórico</th><th class="n">Dif. unid.</th><th class="n">Dif. S/</th></tr></thead><tbody id="tCon"></tbody></table></div>
   </div>
 </section>
 
 <section data-tab="carga">
   <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))">
-    <div class="card"><h2>Insumos</h2><p class="hint">Columnas: Código, Insumo, Categoría, Unidad, Costo, Merma %, Inv. inicial, Compras, Inv. final. Las tres últimas son opcionales.</p>
+    <div class="card"><h2>Insumos</h2><p class="hint">Acepta la plantilla (Código, Insumo, Categoría, Unidad, Costo, Merma %, Inv. inicial, Compras, Inv. final) o el reporte de insumos de Inforest (Descripción de insumo, Unidad compra, Precio Promedio, Factor, Unidad costo, Familia).</p>
       <div class="drop" data-k="ins"><b>Arrastra tu Excel aquí</b><br><span class="hint">o haz clic para elegir (.xlsx, .xls, .csv)</span></div>
       <div class="row" style="margin-top:12px"><button class="btn ghost sm" data-tpl="ins0">Plantilla vacía</button><button class="btn ghost sm" data-tpl="ins1">Plantilla con ejemplo</button></div></div>
     <div class="card"><h2>Ventas</h2><p class="hint">Columnas: Fecha (opcional), Plato o Código, Unidades, Precio (opcional). Si un plato se repite por día, se suman sus unidades.</p>
@@ -206,7 +208,7 @@ function seed(){
    ['P003','Ají de gallina','Fondo',38,190,[['I003',.16],['I007',.05],['I013',.04],['I014',.06],['I009',.15],['I012',.12],['I016',.02]]],
    ['P004','Chicha morada (vaso)','Bebida',12,450,[['I017',.05],['I018',.04],['I006',.02]]]]
    .map(([cod,nom,cat,precio,ven,ing])=>({id:nid(),cod,nom,cat,precio,ven,ing:ing.map(([c,q])=>({id:nid(),iid:by(c),q}))}));
-  const st={cfg:{nombre:'Mesa Criolla – Cocina peruana',logo:null,meta:30,igv:true,ini:'2026-10-01',fin:'2026-10-31'},ins:I,rec:R,sel:R[0].id,uid};
+  const st={cfg:{nombre:'Mesa Criolla – Cocina peruana',logo:null,meta:30,igv:true,rc:0,ini:'2026-10-01',fin:'2026-10-31'},ins:I,rec:R,sel:R[0].id,uid};
   S=st;
   const extra={I001:1.10,I006:1.15,I002:1.07};
   I.forEach(i=>{const t=teor(i),r=t*(extra[i.cod]||1.02);i.ii=+(t*.25).toFixed(1);i.co=+Math.ceil(r*1.05).toFixed(1);i.fi=+(i.ii+i.co-r).toFixed(1)});
@@ -226,31 +228,41 @@ function setSync(t,c){const e=document.getElementById('sync');if(e){e.textConten
 function snapKnown(){known={ins:new Set(S.ins.map(i=>i.id)),rec:new Set(S.rec.map(r=>r.id)),ing:new Set(S.rec.flatMap(r=>r.ing.map(g=>g.id)))}}
 const chk=r=>{if(r.error)throw r.error;return r.data};
 async function cloudLoad(){
-  const [c,i,r,g]=await Promise.all([sb.from('configuracion').select('*').maybeSingle(),sb.from('insumos').select('*').order('codigo'),sb.from('recetas').select('*').order('codigo'),sb.from('receta_ingredientes').select('*').order('orden')]);
-  const cfg=chk(c),ins=chk(i),rec=chk(r),ing=chk(g);
+  async function all(t,ord){let out=[];for(let k=0;;k+=1000){const d=chk(await sb.from(t).select('*').order(ord).order('id').range(k,k+999));out=out.concat(d);if(d.length<1000)break}return out}
+  const [c,ins,rec,ing]=await Promise.all([sb.from('configuracion').select('*').maybeSingle(),all('insumos','nombre'),all('recetas','codigo'),all('receta_ingredientes','orden')]);
+  const cfg=chk(c);
   known={ins:new Set(),rec:new Set(),ing:new Set()};
-  if(!ins.length&&!rec.length){seed();if(cfg)S.cfg.nombre=cfg.nombre;await cloudSave();return}
-  S={cfg:{nombre:cfg?.nombre||'Mi restaurante',logo:cfg?.logo||null,meta:Number(cfg?.meta_fc??30),igv:cfg?cfg.precios_con_igv:true,ini:cfg?.periodo_ini||'',fin:cfg?.periodo_fin||''},
+  if(!ins.length&&!rec.length){seed();if(cfg)S.cfg.nombre=cfg.nombre;saved.clear();cfgSaved='';await cloudSave();return}
+  S={cfg:{nombre:cfg?.nombre||'Mi restaurante',logo:cfg?.logo||null,meta:Number(cfg?.meta_fc??30),igv:cfg?cfg.precios_con_igv:true,rc:Number(cfg?.recargo_consumo??0),ini:cfg?.periodo_ini||'',fin:cfg?.periodo_fin||''},
     ins:ins.map(x=>({id:x.id,cod:x.codigo||'',nom:x.nombre,cat:x.categoria||'Otros',uni:x.unidad,costo:Number(x.costo),merma:Number(x.merma),ii:Number(x.inv_inicial),co:Number(x.compras),fi:Number(x.inv_final)})),
     rec:rec.map(x=>({id:x.id,cod:x.codigo||'',nom:x.nombre,cat:x.categoria||'Fondo',precio:Number(x.precio),ven:Number(x.unidades_vendidas),ing:ing.filter(y=>y.receta_id===x.id).map(y=>({id:y.id,iid:y.insumo_id,q:Number(y.cantidad)}))}))};
-  S.sel=S.rec[0]?.id;snapKnown();
+  S.sel=S.rec[0]?.id;markSaved(buildRows(user.id));cfgSaved=sig(cfgRow(user.id));
 }
+const saved=new Map();let cfgSaved='';const sig=o=>JSON.stringify(o);
+function buildRows(u){
+  return{ins:S.ins.map(i=>({id:i.id,user_id:u,codigo:i.cod,nombre:i.nom||'Sin nombre',categoria:i.cat,unidad:i.uni,costo:+(+i.costo).toFixed(4),merma:i.merma,inv_inicial:i.ii,compras:i.co,inv_final:i.fi})),
+    rec:S.rec.map(r=>({id:r.id,user_id:u,codigo:r.cod,nombre:r.nom||'Sin nombre',categoria:r.cat,precio:r.precio,unidades_vendidas:r.ven})),
+    ing:S.rec.flatMap(r=>r.ing.filter(g=>g.iid&&insById(g.iid)).map((g,k)=>({id:g.id,user_id:u,receta_id:r.id,insumo_id:g.iid,cantidad:g.q,orden:k})))};
+}
+const cfgRow=u=>({user_id:u,nombre:S.cfg.nombre,logo:S.cfg.logo,meta_fc:S.cfg.meta,precios_con_igv:S.cfg.igv,recargo_consumo:num(S.cfg.rc)||0,periodo_ini:S.cfg.ini||null,periodo_fin:S.cfg.fin||null});
+function markSaved(b){saved.clear();['ins','rec','ing'].forEach(k=>b[k].forEach(x=>saved.set(k+x.id,sig(x))));known={ins:new Set(b.ins.map(x=>x.id)),rec:new Set(b.rec.map(x=>x.id)),ing:new Set(b.ing.map(x=>x.id))}}
+async function inChunks(arr,n,fn){for(let k=0;k<arr.length;k+=n)chk(await fn(arr.slice(k,k+n)))}
 async function cloudSave(){
   if(!sb||!user)return;if(saving){again=true;return}saving=true;setSync('Guardando…','');
-  try{const u=user.id;
-    const ins=S.ins.map(i=>({id:i.id,user_id:u,codigo:i.cod,nombre:i.nom||'Sin nombre',categoria:i.cat,unidad:i.uni,costo:i.costo,merma:i.merma,inv_inicial:i.ii,compras:i.co,inv_final:i.fi}));
-    const rec=S.rec.map(r=>({id:r.id,user_id:u,codigo:r.cod,nombre:r.nom||'Sin nombre',categoria:r.cat,precio:r.precio,unidades_vendidas:r.ven}));
-    const ing=S.rec.flatMap(r=>r.ing.map((g,k)=>({id:g.id,user_id:u,receta_id:r.id,insumo_id:g.iid,cantidad:g.q,orden:k})));
-    const gone=(set,arr)=>[...set].filter(id=>!arr.some(x=>x.id===id));
-    const dIng=gone(known.ing,ing),dRec=gone(known.rec,rec),dIns=gone(known.ins,ins);
-    if(dIng.length)chk(await sb.from('receta_ingredientes').delete().in('id',dIng));
-    if(dRec.length)chk(await sb.from('recetas').delete().in('id',dRec));
-    if(dIns.length)chk(await sb.from('insumos').delete().in('id',dIns));
-    chk(await sb.from('configuracion').upsert({user_id:u,nombre:S.cfg.nombre,logo:S.cfg.logo,meta_fc:S.cfg.meta,precios_con_igv:S.cfg.igv,periodo_ini:S.cfg.ini||null,periodo_fin:S.cfg.fin||null,updated_at:new Date().toISOString()},{onConflict:'user_id'}));
-    if(ins.length)chk(await sb.from('insumos').upsert(ins));
-    if(rec.length)chk(await sb.from('recetas').upsert(rec));
-    if(ing.length)chk(await sb.from('receta_ingredientes').upsert(ing));
-    known={ins:new Set(ins.map(x=>x.id)),rec:new Set(rec.map(x=>x.id)),ing:new Set(ing.map(x=>x.id))};
+  try{const u=user.id,b=buildRows(u);
+    const gone=(set,arr)=>{const ids=new Set(arr.map(x=>x.id));return[...set].filter(id=>!ids.has(id))};
+    const dIng=gone(known.ing,b.ing),dRec=gone(known.rec,b.rec),dIns=gone(known.ins,b.ins);
+    await inChunks(dIng,100,c=>sb.from('receta_ingredientes').delete().in('id',c));
+    await inChunks(dRec,100,c=>sb.from('recetas').delete().in('id',c));
+    await inChunks(dIns,100,c=>sb.from('insumos').delete().in('id',c));
+    const cr=cfgRow(u);if(sig(cr)!==cfgSaved){chk(await sb.from('configuracion').upsert({...cr,updated_at:new Date().toISOString()},{onConflict:'user_id'}));cfgSaved=sig(cr)}
+    const ch=k=>b[k].filter(x=>saved.get(k+x.id)!==sig(x));
+    const ci=ch('ins'),cre=ch('rec'),cg=ch('ing');
+    if(ci.length>300)setSync(`Guardando ${ci.length} insumos…`,'');
+    await inChunks(ci,500,c=>sb.from('insumos').upsert(c));
+    await inChunks(cre,500,c=>sb.from('recetas').upsert(c));
+    await inChunks(cg,500,c=>sb.from('receta_ingredientes').upsert(c));
+    markSaved(b);
     setSync('Guardado en la nube','ok');
   }catch(e){console.error(e);setSync('Error al guardar','err');toast('No se pudo guardar en la base de datos: '+(e.message||e))}
   saving=false;if(again){again=false;cloudSave()}
@@ -265,13 +277,15 @@ async function cloudVentas(lines,archivo){
 /* ---------- cálculos ---------- */
 const insById=id=>S.ins.find(i=>i.id===id);
 const apr=i=>i.costo/Math.max(.0001,1-i.merma/100);
-const neto=p=>S.cfg.igv?p/1.18:p;
+const impF=()=>1+(S.cfg.igv?0.18:0)+(num(S.cfg.rc)||0)/100;
+const neto=p=>p/impF();
+const netoTxt=()=>S.cfg.igv&&num(S.cfg.rc)?' (sin IGV ni recargo)':S.cfg.igv?' (sin IGV)':num(S.cfg.rc)?' (sin recargo)':'';
 const costoRec=r=>r.ing.reduce((s,g)=>{const i=insById(g.iid);return s+(i?g.q*apr(i):0)},0);
 function teor(i){return S.rec.reduce((s,r)=>s+r.ing.filter(g=>g.iid===i.id).reduce((a,g)=>a+r.ven*g.q/Math.max(.0001,1-i.merma/100),0),0)}
 const real=i=>i.ii+i.co-i.fi;
 const meta=()=>S.cfg.meta/100;
 function estado(fc){const m=S.cfg.meta;const v=fc*100;return v<=m?['ok','En meta']:v<=m+3?['warn','Alerta']:['bad','Crítico']}
-function sugerido(c){const p=c/meta();const g=S.cfg.igv?p*1.18:p;return Math.ceil(g*2)/2}
+function sugerido(c){const g=c/meta()*impF();return Math.ceil(g*2)/2}
 function totales(){
   let vn=0,ct=0;S.rec.forEach(r=>{vn+=r.ven*neto(r.precio);ct+=r.ven*costoRec(r)});
   let cr=0;const dev=S.ins.map(i=>{const t=teor(i),re=real(i);cr+=re*i.costo;return{i,t,re,du:re-t,ds:(re-t)*i.costo}});
@@ -295,7 +309,7 @@ function renderResumen(){
   $('#alerta').innerHTML=d>0.01?`<div class="alert bad"><b>El consumo real supera al teórico en ${(d*100).toFixed(1)} puntos de food cost (${money(T.cr-T.ct)}).</b> Insumos con mayor desvío:<ol>${top.map(x=>`<li>${esc(x.i.nom)}: ${f2(x.du)} ${x.i.uni} de más, ${money(x.ds)}</li>`).join('')}</ol></div>`
     :`<div class="alert ok"><b>Consumo real dentro de lo esperado.</b> La diferencia con el teórico es de ${(d*100).toFixed(1)} puntos.</div>`;
   const [ct]=estado(T.fcT),[cr]=estado(T.fcR);
-  $('#kpis').innerHTML=[['Ventas netas',money(T.vn),S.cfg.igv?'sin IGV':'precios sin IGV'],['FC teórico',pct(T.fcT),`<span class="tag ${ct}">meta ${S.cfg.meta}%</span>`],['FC real',pct(T.fcR),`<span class="tag ${cr}">meta ${S.cfg.meta}%</span>`],['Desviación real vs teórico',(d>=0?'+':'')+(d*100).toFixed(1)+' pts',money(T.cr-T.ct)],['Margen bruto real',money(mb),pct(T.vn?mb/T.vn:0)+' de la venta']]
+  $('#kpis').innerHTML=[['Ventas netas',money(T.vn),netoTxt().replace(/[()]/g,'').trim()||'precios netos'],['FC teórico',pct(T.fcT),`<span class="tag ${ct}">meta ${S.cfg.meta}%</span>`],['FC real',pct(T.fcR),`<span class="tag ${cr}">meta ${S.cfg.meta}%</span>`],['Desviación real vs teórico',(d>=0?'+':'')+(d*100).toFixed(1)+' pts',money(T.cr-T.ct)],['Margen bruto real',money(mb),pct(T.vn?mb/T.vn:0)+' de la venta']]
     .map(([a,b,c])=>`<div class="kpi"><small>${a}</small><b>${b}</b><span>${c}</span></div>`).join('');
   const rows=S.rec.map(r=>{const c=costoRec(r),n=neto(r.precio);return{r,c,n,fc:n?c/n:0}});
   const mx=Math.max(meta()*1.5,...rows.map(x=>x.fc*1.1),.05);
@@ -307,29 +321,38 @@ function renderResumen(){
 
 /* ---------- insumos ---------- */
 const opts=(arr,v)=>arr.map(a=>`<option${a===v?' selected':''}>${a}</option>`).join('');
+const LIM=150;
+function catsAll(){return[...new Set(S.ins.map(i=>i.cat).filter(Boolean))].sort((a,b)=>a.localeCompare(b))}
 function renderIns(){
-  $('#tIns').innerHTML=S.ins.map(i=>`<tr data-id="${i.id}"><td><input type="text" data-f="cod" value="${esc(i.cod)}" style="width:80px"></td><td><input type="text" data-f="nom" value="${esc(i.nom)}" style="min-width:170px"></td><td><select data-f="cat">${opts(CATS,i.cat)}</select></td><td><select data-f="uni" style="width:80px">${opts(UNIS,i.uni)}</select></td><td class="n"><input type="number" data-f="costo" step="0.01" min="0" value="${i.costo}"></td><td class="n"><input type="number" data-f="merma" step="0.5" min="0" max="99" value="${i.merma}"></td><td class="n" id="ap${i.id}"></td><td><button class="btn del" data-del="${i.id}" aria-label="Eliminar">×</button></td></tr>`).join('');
-  updIns();filtIns();
+  const q=norm($('#qIns').value),fam=$('#fIns').value,cats=catsAll();
+  $('#fIns').innerHTML='<option value="">Todas las familias</option>'+cats.map(c=>`<option${c===fam?' selected':''}>${esc(c)}</option>`).join('');
+  $('#dlCat').innerHTML=[...new Set([...cats,...CATS])].map(c=>`<option value="${esc(c)}">`).join('');
+  const list=S.ins.filter(i=>(!fam||i.cat===fam)&&(!q||norm(i.nom+' '+i.cod).includes(q)));
+  $('#tIns').innerHTML=list.slice(0,LIM).map(i=>`<tr data-id="${i.id}"><td><input type="text" data-f="cod" value="${esc(i.cod)}" style="width:80px"></td><td><input type="text" data-f="nom" value="${esc(i.nom)}" style="min-width:200px"></td><td><input type="text" data-f="cat" list="dlCat" value="${esc(i.cat)}" style="min-width:150px"></td><td><select data-f="uni" style="width:80px">${opts(UNIS,i.uni)}</select></td><td class="n"><input type="number" data-f="costo" step="0.01" min="0" value="${+(+i.costo).toFixed(4)}"></td><td class="n"><input type="number" data-f="merma" step="0.5" min="0" max="99" value="${i.merma}"></td><td class="n" id="ap${i.id}"></td><td><button class="btn del" data-del="${i.id}" aria-label="Eliminar">×</button></td></tr>`).join('');
+  $('#insInfo').textContent=list.length>LIM?`Mostrando ${LIM} de ${list.length} insumos. Usa el buscador o el filtro de familia para ver el resto.`:`${list.length} insumo(s)${q||fam?' con este filtro':''}.`;
+  updIns();
 }
 function updIns(){S.ins.forEach(i=>{const c=document.getElementById('ap'+i.id);if(c)c.textContent=money(apr(i))+' / '+i.uni})}
-function filtIns(){const q=norm($('#qIns').value);$$('#tIns tr').forEach(tr=>{const i=insById(tr.dataset.id);tr.classList.toggle('hide',!!q&&!norm(i.nom+i.cod).includes(q))})}
+let qT;function filtIns(){clearTimeout(qT);qT=setTimeout(renderIns,200)}
 $('#tIns').addEventListener('input',e=>{const t=e.target,tr=t.closest('tr');if(!tr||!t.dataset.f)return;const i=insById(tr.dataset.id);const f=t.dataset.f;
   i[f]=['costo','merma'].includes(f)?Math.min(f==='merma'?99:1e9,Math.max(0,num(t.value))):t.value;
   if(f==='nom'||f==='uni')renderRec();refresh();});
 $('#tIns').addEventListener('click',e=>{const b=e.target.closest('[data-del]');if(!b)return;const id=b.dataset.del,i=insById(id);
   let n=0;S.rec.forEach(r=>{const l=r.ing.length;r.ing=r.ing.filter(g=>g.iid!==id);n+=l-r.ing.length});
   S.ins=S.ins.filter(x=>x.id!==id);renderAll();toast(`Se eliminó ${i.nom}`+(n?` y se quitó de ${n} receta(s)`:''));});
-$('#addIns').onclick=()=>{const i={id:nid(),cod:'I'+String(S.ins.length+1).padStart(3,'0'),nom:'Nuevo insumo',cat:'Otros',uni:'kg',costo:0,merma:0,ii:0,co:0,fi:0};S.ins.push(i);$('#qIns').value='';renderAll();const inp=$(`#tIns tr[data-id="${i.id}"] [data-f=nom]`);inp.focus();inp.select();};
-$('#qIns').addEventListener('input',filtIns);
+$('#addIns').onclick=()=>{const i={id:nid(),cod:'I'+String(S.ins.length+1).padStart(3,'0'),nom:'Nuevo insumo',cat:'Otros',uni:'kg',costo:0,merma:0,ii:0,co:0,fi:0};S.ins.unshift(i);$('#qIns').value='';$('#fIns').value='';renderAll();const inp=$(`#tIns tr[data-id="${i.id}"] [data-f=nom]`);inp.focus();inp.select();};
+$('#qIns').addEventListener('input',filtIns);$('#fIns').addEventListener('change',renderIns);
 
 /* ---------- recetas ---------- */
 const recSel=()=>S.rec.find(r=>r.id===S.sel)||S.rec[0];
+const lbl=i=>i?`${i.nom} · ${i.uni}`:'';
+const byLbl=v=>{v=String(v).trim();return S.ins.find(i=>lbl(i)===v)||S.ins.find(i=>norm(i.nom)===norm(v))};
 function renderRec(){
   const r=recSel();
   $('#selRec').innerHTML=S.rec.map(x=>`<option value="${x.id}"${r&&x.id===r.id?' selected':''}>${esc(x.nom)}</option>`).join('');
   if(!r){$('#recBox').innerHTML='<div class="card"><p class="hint">No hay recetas. Crea una nueva.</p></div>';return}
   S.sel=r.id;
-  const insOpts=v=>S.ins.map(i=>`<option value="${i.id}"${i.id===v?' selected':''}>${esc(i.nom)} (${i.uni})</option>`).join('');
+  const dl=`<datalist id="dlIns">${S.ins.map(i=>`<option value="${esc(lbl(i))}">`).join('')}</datalist>`;
   $('#recBox').innerHTML=`<div class="grid2"><div class="card">
    <div class="row" style="align-items:end"><label style="flex:2 1 220px;font-size:13px;color:var(--mute)">Nombre del plato<input type="text" data-r="nom" value="${esc(r.nom)}"></label>
    <label style="flex:1 1 100px;font-size:13px;color:var(--mute)">Código<input type="text" data-r="cod" value="${esc(r.cod)}"></label>
@@ -337,8 +360,8 @@ function renderRec(){
    <label style="flex:1 1 120px;font-size:13px;color:var(--mute)">Precio de venta S/<input type="number" data-r="precio" step="0.5" min="0" value="${r.precio}"></label></div>
    <h3 style="margin:18px 0 10px">Ingredientes por porción</h3>
    <div class="scroll"><table><thead><tr><th>Insumo</th><th class="n">Cantidad</th><th class="n">Costo</th><th class="n">% del costo</th><th></th></tr></thead><tbody id="tIng">
-   ${r.ing.map((g,k)=>`<tr data-k="${k}"><td><select data-g="iid" style="min-width:180px">${insOpts(g.iid)}</select></td><td class="n"><input type="number" data-g="q" step="0.005" min="0" value="${g.q}"></td><td class="n" id="gc${k}"></td><td class="n" id="gp${k}"></td><td><button class="btn del" data-gdel="${k}" aria-label="Quitar">×</button></td></tr>`).join('')}
-   </tbody></table></div>
+   ${r.ing.map((g,k)=>`<tr data-k="${k}"><td><input type="text" list="dlIns" data-g="iname" value="${esc(lbl(insById(g.iid)))}" placeholder="Escribe para buscar el insumo" style="min-width:240px"></td><td class="n"><input type="number" data-g="q" step="0.005" min="0" value="${g.q}"></td><td class="n" id="gc${k}"></td><td class="n" id="gp${k}"></td><td><button class="btn del" data-gdel="${k}" aria-label="Quitar">×</button></td></tr>`).join('')}
+   </tbody></table></div>${dl}
    <button class="btn ghost sm" id="addIng" style="margin-top:12px"${S.ins.length?'':' disabled'}>+ Agregar ingrediente</button></div>
    <div class="card"><h3>Resultado por porción</h3><div class="big" id="rFc" style="margin:10px 0"></div><div id="rTag"></div><div class="res" id="rRes" style="margin-top:14px"></div></div></div>`;
   updRec();
@@ -347,12 +370,13 @@ function updRec(){
   const r=recSel();if(!r||!$('#rRes'))return;const c=costoRec(r),n=neto(r.precio),fc=n?c/n:0,[e,l]=estado(fc);
   r.ing.forEach((g,k)=>{const i=insById(g.iid),gc=i?g.q*apr(i):0;const a=document.getElementById('gc'+k),b=document.getElementById('gp'+k);if(a)a.textContent=money(gc);if(b)b.textContent=pct(c?gc/c:0)});
   $('#rFc').textContent=pct(fc)+' FC';$('#rTag').innerHTML=`<span class="tag ${e}">${l}</span>`;
-  $('#rRes').innerHTML=[['Costo por porción',money(c)],['Precio de venta',money(r.precio)],['Precio neto'+(S.cfg.igv?' (sin IGV)':''),money(n)],['Margen',money(n-c)+' · '+pct(n?(n-c)/n:0)],[`Precio sugerido para ${S.cfg.meta}%`,money(sugerido(c))]].map(([a,b])=>`<div><span>${a}</span><b>${b}</b></div>`).join('');
+  $('#rRes').innerHTML=[['Costo por porción',money(c)],['Precio de venta',money(r.precio)],['Precio neto'+netoTxt(),money(n)],['Margen',money(n-c)+' · '+pct(n?(n-c)/n:0)],[`Precio sugerido para ${S.cfg.meta}%`,money(sugerido(c))]].map(([a,b])=>`<div><span>${a}</span><b>${b}</b></div>`).join('');
 }
 $('#recBox').addEventListener('input',e=>{const t=e.target,r=recSel();if(t.dataset.r){const f=t.dataset.r;r[f]=f==='precio'?Math.max(0,num(t.value)):t.value;if(f==='nom'){const o=$(`#selRec option[value="${r.id}"]`);if(o)o.textContent=r.nom}}
   else if(t.dataset.g==='q'){r.ing[+t.closest('tr').dataset.k].q=Math.max(0,num(t.value))}else return;refresh();});
-$('#recBox').addEventListener('change',e=>{const t=e.target;if(t.dataset.g==='iid'){recSel().ing[+t.closest('tr').dataset.k].iid=t.value;refresh()}});
-$('#recBox').addEventListener('click',e=>{const r=recSel();if(e.target.id==='addIng'){const used=new Set(r.ing.map(g=>g.iid));const i=S.ins.find(x=>!used.has(x.id))||S.ins[0];r.ing.push({id:nid(),iid:i.id,q:0});renderRec();refresh();const q=$$('#tIng [data-g=q]').pop();q&&q.focus()}
+$('#recBox').addEventListener('change',e=>{const t=e.target;if(t.dataset.g!=='iname')return;const g=recSel().ing[+t.closest('tr').dataset.k],i=byLbl(t.value);
+  if(i){g.iid=i.id;t.value=lbl(i);refresh()}else{t.value=lbl(insById(g.iid));toast('No encontré ese insumo. Elige uno de la lista.')}});
+$('#recBox').addEventListener('click',e=>{const r=recSel();if(e.target.id==='addIng'){r.ing.push({id:nid(),iid:null,q:0});renderRec();refresh();const q=$$('#tIng [data-g=iname]').pop();q&&q.focus()}
   const b=e.target.closest('[data-gdel]');if(b){r.ing.splice(+b.dataset.gdel,1);renderRec();refresh()}});
 $('#selRec').onchange=e=>{S.sel=e.target.value;renderRec();save()};
 $('#newRec').onclick=()=>{const r={id:nid(),cod:'P'+String(S.rec.length+1).padStart(3,'0'),nom:'Nuevo plato',cat:'Fondo',precio:0,ven:0,ing:[]};S.rec.push(r);S.sel=r.id;renderAll();const n=$('#recBox [data-r=nom]');n.focus();n.select()};
@@ -360,12 +384,15 @@ $('#dupRec').onclick=()=>{const o=recSel();if(!o)return;const r={...JSON.parse(J
 $('#delRec').onclick=()=>{const r=recSel();if(!r)return;S.rec=S.rec.filter(x=>x.id!==r.id);S.sel=S.rec[0]?.id;renderAll();toast(`Se eliminó ${r.nom}`)};
 
 /* ---------- ventas y consumo ---------- */
-let sortLoss=false,sinRec=[];
+let sortLoss=false,sinRec=[],conAll=false;
 function renderVen(){
   $('#tVen').innerHTML=S.rec.map(r=>`<tr data-id="${r.id}"><td>${esc(r.nom)}</td><td class="n"><input type="number" data-v="ven" min="0" step="1" value="${r.ven}"></td><td class="n">${money(r.precio)}</td><td class="n" id="vn${r.id}"></td><td class="n" id="vc${r.id}"></td></tr>`).join('');
   $('#sinReceta').innerHTML=sinRec.length?`<div class="alert bad" style="margin:14px 0 0"><b>Platos sin receta en la última carga</b> (no entran al food cost): ${sinRec.map(x=>esc(x.n)+' ('+f2(x.u)+' u)').join(', ')}</div>`:'';
-  let list=[...S.ins];if(sortLoss)list.sort((a,b)=>(real(b)-teor(b))*b.costo-(real(a)-teor(a))*a.costo);
-  $('#tCon').innerHTML=list.map(i=>`<tr data-id="${i.id}"><td>${esc(i.nom)}</td><td>${i.uni}</td>${['ii','co','fi'].map(f=>`<td class="n"><input type="number" data-c="${f}" min="0" step="0.1" value="${i[f]}"></td>`).join('')}<td class="n" id="cr${i.id}"></td><td class="n" id="ct${i.id}"></td><td class="n" id="cu${i.id}"></td><td class="n" id="cs${i.id}"></td></tr>`).join('');
+  const used=new Set(S.rec.flatMap(r=>r.ing.map(g=>g.iid)));const rel=S.ins.filter(i=>used.has(i.id)||i.ii||i.co||i.fi);
+  let list=conAll?[...S.ins]:rel;if(sortLoss)list.sort((a,b)=>(real(b)-teor(b))*b.costo-(real(a)-teor(a))*a.costo);
+  $('#conInfo').textContent=conAll?`Mostrando ${Math.min(LIM,list.length)} de ${list.length} insumos.`:`${rel.length} insumos usados en recetas o con movimiento de inventario.`;
+  $('#allCon').textContent=conAll?'Solo los usados':'Mostrar todos';
+  $('#tCon').innerHTML=list.slice(0,conAll?LIM:1e9).map(i=>`<tr data-id="${i.id}"><td>${esc(i.nom)}</td><td>${i.uni}</td>${['ii','co','fi'].map(f=>`<td class="n"><input type="number" data-c="${f}" min="0" step="0.1" value="${i[f]}"></td>`).join('')}<td class="n" id="cr${i.id}"></td><td class="n" id="ct${i.id}"></td><td class="n" id="cu${i.id}"></td><td class="n" id="cs${i.id}"></td></tr>`).join('');
   updVen();
 }
 function updVen(){
@@ -375,26 +402,46 @@ function updVen(){
 }
 $('#tVen').addEventListener('input',e=>{const t=e.target;if(t.dataset.v){S.rec.find(r=>r.id===t.closest('tr').dataset.id).ven=Math.max(0,num(t.value));refresh()}});
 $('#tCon').addEventListener('input',e=>{const t=e.target;if(t.dataset.c){insById(t.closest('tr').dataset.id)[t.dataset.c]=Math.max(0,num(t.value));refresh()}});
+$('#allCon').onclick=()=>{conAll=!conAll;renderVen()};
 $('#sortCon').onclick=()=>{sortLoss=!sortLoss;$('#sortCon').textContent=sortLoss?'Orden original':'Ordenar por pérdida';renderVen()};
 
 /* ---------- excel ---------- */
-const AL={cod:['codigo','cod','code','sku'],nom:['insumo','nombre','descripcion','producto','item'],cat:['categoria','familia','grupo'],uni:['unidad','und','um','unidadmedida'],costo:['costo','costocompra','precio','preciocompra','costounitario'],merma:['merma','mermapct','merma%','porcentajemerma'],ii:['invinicial','inventarioinicial','inicial','stockinicial'],co:['compras','compra','ingresos'],fi:['invfinal','inventariofinal','final','stockfinal']};
+const AL={cod:['codigo','cod','code','sku','codigoinsumo'],nom:['insumo','nombre','descripcion','producto','item','descripciondeinsumo','descripcioninsumo','articulo'],cat:['categoria','familia','grupo'],uni:['unidad','und','um','unidadmedida','unidadcompra','unidaddecompra'],costo:['costo','costocompra','precio','preciocompra','costounitario','preciopromedio','preciopromedios','costopromedio','ultimocosto','ultcosto'],fac:['factor','factorconversion','equivalencia'],ucost:['unidadcosto','unidaddecosto','unidadreceta'],merma:['merma','mermapct','merma%','porcentajemerma'],ii:['invinicial','inventarioinicial','inicial','stockinicial'],co:['compras','compra','ingresos'],fi:['invfinal','inventariofinal','final','stockfinal']};
 const ALV={fecha:['fecha','dia','date'],plato:['plato','producto','descripcion','nombre','item'],cod:['codigo','cod','code'],u:['unidades','cantidad','cant','und','vendidas','unidadesvendidas'],precio:['precio','precioventa','pvp']};
 function mapHead(h,al){const m={};h.forEach((c,k)=>{const n=norm(c);for(const f in al)if(m[f]==null&&al[f].map(norm).includes(n))m[f]=k});return m}
-const uniN=u=>{const n=norm(u);return['kg','kilo','kilos','kilogramo','kilogramos','kgs'].includes(n)?'kg':['lt','l','litro','litros','lts'].includes(n)?'lt':['und','un','unidad','unidades','u','uni'].includes(n)?'und':null};
+const uniN=u=>{const n=norm(u);return['kg','kilo','kilos','kilogramo','kilogramos','kgs'].includes(n)?'kg':['lt','l','litro','litros','lts'].includes(n)?'lt':['und','un','unidad','unidades','u','uni','porcion','porciones','botella','botellas','pieza','piezas'].includes(n)?'und':null};
+const UCONV={gramos:['kg',1000],gramo:['kg',1000],gr:['kg',1000],grs:['kg',1000],g:['kg',1000],mililitros:['lt',1000],mililitro:['lt',1000],ml:['lt',1000],
+  kilos:['kg',1],kilo:['kg',1],kg:['kg',1],kilogramos:['kg',1],litros:['lt',1],litro:['lt',1],lt:['lt',1],l:['lt',1],galon:['lt',1/3.785],galones:['lt',1/3.785],onza:['kg',1000/28.35],onzas:['kg',1000/28.35],oz:['kg',1000/28.35]};
+['unidad','unidades','und','un','porcion','porciones','botella','botellas','paquete','paquetes','caja','cajas','bolsa','bolsas','lata','latas','pieza','piezas','rollo','rollos','sobre','sobres'].forEach(k=>UCONV[k]=['und',1]);
 let pending=null;
 function readFile(file,k){if(!window.XLSX){toast('No se pudo cargar el lector de Excel. Revisa tu conexión.');return}
   const fr=new FileReader();fr.onload=()=>{try{const wb=XLSX.read(new Uint8Array(fr.result),{type:'array',cellDates:true});const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:'',raw:true});k==='ins'?prevIns(rows,file.name):prevVen(rows,file.name)}catch(e){toast('No se pudo leer el archivo: '+e.message)}};fr.readAsArrayBuffer(file)}
-function headRow(rows,al){for(let k=0;k<Math.min(rows.length,10);k++){const m=mapHead(rows[k],al);if(Object.keys(m).length>=2)return[k,m]}return[-1,{}]}
+function headRow(rows,al){for(let k=0;k<Math.min(rows.length,40);k++){const m=mapHead(rows[k],al);if(Object.keys(m).length>=2)return[k,m]}return[-1,{}]}
 function prevIns(rows,fn){
-  const[h,m]=headRow(rows,AL);if(h<0||m.nom==null){showPrev(`<p class="loss">No encontré la columna "Insumo" en ${esc(fn)}. Usa la plantilla.</p>`);return}
+  const[h,m]=headRow(rows,AL);if(h<0||m.nom==null){showPrev(`<p class="loss">No encontré la columna del nombre del insumo en ${esc(fn)}. Usa la plantilla o el reporte de insumos de Inforest.</p>`);return}
   const out=[];rows.slice(h+1).forEach((r,k)=>{if(r.every(c=>String(c).trim()===''))return;const g=f=>m[f]==null?'':r[m[f]];const err=[];
-    const nom=String(g('nom')).trim();if(!nom)err.push('sin nombre');const uni=uniN(g('uni')||'kg');if(!uni)err.push('unidad no válida');
-    const costo=num(g('costo'));if(String(g('costo')).trim()===''||costo<0)err.push('costo no válido');let me=num(g('merma'));if(me>0&&me<1)me*=100;if(me<0||me>=100)err.push('merma fuera de rango');
-    const o={fila:h+k+2,cod:String(g('cod')).trim(),nom,cat:CATS.find(c=>norm(c)===norm(g('cat')))||'Otros',uni,costo,merma:+me.toFixed(2),err};
+    const nom=String(g('nom')).trim();if(!nom)return;
+    let costo=num(g('costo')),uni,conv='';
+    if(String(g('costo')).trim()===''||costo<0)err.push('costo no válido');
+    const uc=norm(g('ucost')),fac=num(g('fac'))||1;
+    if(m.ucost!=null&&uc){const cv=UCONV[uc];if(cv){uni=cv[0];costo=costo/fac*cv[1]}else uni=null;conv=`${g('uni')} ÷ ${f2(fac)} ${g('ucost')}`}
+    else uni=uniN(g('uni')||'kg');
+    if(!uni)err.push('unidad no válida');
+    let me=null;if(m.merma!=null&&String(g('merma')).trim()!==''){me=num(g('merma'));if(me>0&&me<1)me*=100;if(me<0||me>=100)err.push('merma fuera de rango');me=+me.toFixed(2)}
+    const fam=String(g('cat')).trim();
+    const o={fila:h+k+2,cod:String(g('cod')).trim(),nom,cat:fam?(CATS.find(c=>norm(c)===norm(fam))||fam):'',uni,costo:+costo.toFixed(4),merma:me,conv,err,warn:!err.length&&costo===0};
     ['ii','co','fi'].forEach(f=>{if(m[f]!=null&&String(g(f)).trim()!==''){const v=num(g(f));if(v<0)err.push('inventario negativo');o[f]=v}});out.push(o)});
-  const ok=out.filter(o=>!o.err.length);pending={k:'ins',ok};
-  showPrev(`<h3>Vista previa: ${esc(fn)}</h3><p class="hint">${ok.length} filas válidas, ${out.length-ok.length} con error.</p><div class="scroll" style="max-height:340px"><table><thead><tr><th>Fila</th><th>Código</th><th>Insumo</th><th>Unidad</th><th class="n">Costo</th><th class="n">Merma %</th><th>Estado</th></tr></thead><tbody>${out.map(o=>`<tr><td>${o.fila}</td><td>${esc(o.cod)}</td><td>${esc(o.nom)}</td><td>${o.uni||''}</td><td class="n">${f2(o.costo)}</td><td class="n">${f2(o.merma)}</td><td>${o.err.length?`<span class="tag bad">${o.err.join(', ')}</span>`:'<span class="tag ok">OK</span>'}</td></tr>`).join('')}</tbody></table></div>${modeUI(ok.length)}`);
+  const ok=out.filter(o=>!o.err.length);
+  const fams=[...ok.reduce((mp,o)=>mp.set(o.cat||'Sin familia',(mp.get(o.cat||'Sin familia')||0)+1),new Map())].sort((a,b)=>b[1]-a[1]);
+  const off=['suministrosdiversos','suministros'];
+  pending={k:'ins',ok};
+  const show=[...out.filter(o=>o.err.length),...out.filter(o=>!o.err.length)].slice(0,200);
+  const esEjemplo=S.ins.length===18&&S.ins.every(i=>/^I0\d\d$/.test(i.cod));
+  showPrev(`<h3>Vista previa: ${esc(fn)}</h3><p class="hint">${ok.length} insumos válidos, ${out.length-ok.length} con error, ${ok.filter(o=>o.warn).length} sin precio (entran con costo 0).${m.ucost!=null?' El costo se convierte a S/ por kg, litro o unidad usando el factor de Inforest.':''}</p>
+   ${fams.length>1?`<p style="margin:8px 0 4px"><b>Familias a cargar</b></p><div class="row" style="gap:6px 16px">${fams.map(([f,n])=>`<label class="chk" style="min-height:32px;font-size:14px"><input type="checkbox" class="famchk" value="${esc(f)}"${off.includes(norm(f))?'':' checked'}> ${esc(f)} (${n})</label>`).join('')}</div>`:''}
+   <div class="scroll" style="max-height:340px;margin-top:10px"><table><thead><tr><th>Fila</th><th>Insumo</th><th>Familia</th><th>Unidad</th><th class="n">Costo S/</th><th>Conversión</th><th>Estado</th></tr></thead><tbody>${show.map(o=>`<tr><td>${o.fila}</td><td>${esc(o.nom)}</td><td>${esc(o.cat)}</td><td>${o.uni||''}</td><td class="n">${f2(o.costo)}</td><td style="font-size:13px;color:var(--mute)">${esc(o.conv)}</td><td>${o.err.length?`<span class="tag bad">${o.err.join(', ')}</span>`:o.warn?'<span class="tag warn">Sin precio</span>':'<span class="tag ok">OK</span>'}</td></tr>`).join('')}</tbody></table></div>
+   ${out.length>200?`<p class="hint">Se muestran 200 de ${out.length} filas.</p>`:''}
+   <p class="hint">"Reemplazar todo" borra los insumos actuales y los ingredientes de tus recetas. "Actualizar y agregar" cruza por código o por nombre, actualiza el costo y agrega los nuevos.</p>${modeUI(ok.length,esEjemplo)}`);
 }
 function prevVen(rows,fn){
   const[h,m]=headRow(rows,ALV);if(h<0||(m.plato==null&&m.cod==null)||m.u==null){showPrev(`<p class="loss">No encontré las columnas "Plato" y "Unidades" en ${esc(fn)}. Usa la plantilla.</p>`);return}
@@ -410,13 +457,15 @@ function prevVen(rows,fn){
    <div class="scroll" style="max-height:340px"><table><thead><tr><th>Plato</th><th class="n">Unidades</th><th class="n">Precio prom.</th><th>Estado</th></tr></thead><tbody>${list.map(x=>`<tr><td>${esc(x.rec?x.rec.nom:x.n)}</td><td class="n">${f2(x.u)}</td><td class="n">${x.pu?money(x.pv/x.pu):'—'}</td><td>${x.rec?'<span class="tag ok">Con receta</span>':'<span class="tag warn">Sin receta</span>'}</td></tr>`).join('')}</tbody></table></div>
    <label class="chk" style="display:flex;margin-top:10px"><input type="checkbox" id="updPrice"> Actualizar precios de venta con el precio promedio del Excel</label>${modeUI(list.length)}`);
 }
-const modeUI=n=>n?`<div class="row" style="margin-top:14px"><label style="font-size:14px"><select id="mode" style="width:auto"><option value="upd">Actualizar y agregar</option><option value="rep">Reemplazar todo</option></select></label><button class="btn" id="okImp">Confirmar carga</button><button class="btn ghost" id="noImp">Cancelar</button></div>`:'<p class="loss">No hay filas válidas para cargar.</p>';
+const modeUI=(n,r)=>n?`<div class="row" style="margin-top:14px"><label style="font-size:14px"><select id="mode" style="width:auto"><option value="upd">Actualizar y agregar</option><option value="rep"${r?' selected':''}>Reemplazar todo</option></select></label><button class="btn" id="okImp">Confirmar carga</button><button class="btn ghost" id="noImp">Cancelar</button></div>`:'<p class="loss">No hay filas válidas para cargar.</p>';
 function showPrev(h){$('#prev').innerHTML=`<div class="card">${h}</div>`;$('#prev').scrollIntoView({behavior:'smooth',block:'start'})}
 $('#prev').addEventListener('click',e=>{if(e.target.id==='noImp'){pending=null;$('#prev').innerHTML=''}if(e.target.id!=='okImp'||!pending)return;const rep=$('#mode').value==='rep';
-  if(pending.k==='ins'){if(rep){S.ins=[];S.rec.forEach(r=>r.ing=[])}let a=0,u=0;
-    pending.ok.forEach(o=>{let i=S.ins.find(x=>o.cod&&norm(x.cod)===norm(o.cod))||S.ins.find(x=>norm(x.nom)===norm(o.nom));
-      if(!i){i={id:nid(),cod:o.cod||'I'+String(S.ins.length+1).padStart(3,'0'),ii:0,co:0,fi:0};S.ins.push(i);a++}else u++;
-      Object.assign(i,{nom:o.nom,cat:o.cat,uni:o.uni,costo:o.costo,merma:o.merma});if(o.cod)i.cod=o.cod;['ii','co','fi'].forEach(f=>{if(o[f]!=null)i[f]=o[f]})});
+  if(pending.k==='ins'){const sel=$$('.famchk');const fam=new Set(sel.filter(c=>c.checked).map(c=>c.value));const rows=sel.length?pending.ok.filter(o=>fam.has(o.cat||'Sin familia')):pending.ok;
+    if(!rows.length){toast('Elige al menos una familia');return}
+    if(rep){S.ins=[];S.rec.forEach(r=>r.ing=[])}let a=0,u=0;const byCod=new Map(),byNom=new Map();S.ins.forEach(i=>{if(i.cod)byCod.set(norm(i.cod),i);byNom.set(norm(i.nom),i)});
+    rows.forEach(o=>{let i=(o.cod&&byCod.get(norm(o.cod)))||byNom.get(norm(o.nom));
+      if(!i){i={id:nid(),cod:o.cod||'I'+String(S.ins.length+1).padStart(4,'0'),cat:'Otros',merma:0,ii:0,co:0,fi:0};S.ins.push(i);byNom.set(norm(o.nom),i);a++}else u++;
+      Object.assign(i,{nom:o.nom,uni:o.uni,costo:o.costo});if(o.cat)i.cat=o.cat;if(o.merma!=null)i.merma=o.merma;if(o.cod)i.cod=o.cod;['ii','co','fi'].forEach(f=>{if(o[f]!=null)i[f]=o[f]})});
     toast(`Insumos cargados: ${a} nuevos, ${u} actualizados`+(rep?'. Revisa las recetas.':''))}
   else{if(rep)S.rec.forEach(r=>r.ven=0);const up=$('#updPrice')?.checked;pending.list.forEach(x=>{if(x.rec){x.rec.ven=x.u;if(up&&x.pu)x.rec.precio=+(x.pv/x.pu).toFixed(2)}});
     sinRec=pending.list.filter(x=>!x.rec);cloudVentas(pending.lines,pending.fn);if(pending.dmin){S.cfg.ini=pending.dmin;S.cfg.fin=pending.dmax;loadCfg()}toast('Ventas cargadas'+(sinRec.length?`. ${sinRec.length} plato(s) sin receta.`:''))}
@@ -452,10 +501,11 @@ $('#reset').onclick=()=>{$('#confirmReset').innerHTML=`<div class="alert bad" st
 $('#confirmReset').addEventListener('click',e=>{if(e.target.id==='rsY'){seed();sinRec=[];loadCfg();renderAll();toast('Ejemplo restaurado')}if(e.target.id==='rsY'||e.target.id==='rsN')$('#confirmReset').innerHTML=''});
 
 /* ---------- configuración ---------- */
-function loadCfg(){$('#cNombre').value=S.cfg.nombre;$('#cMeta').value=S.cfg.meta;$('#cIgv').checked=S.cfg.igv;$('#cIni').value=S.cfg.ini;$('#cFin').value=S.cfg.fin;renderBrand()}
+function loadCfg(){$('#cNombre').value=S.cfg.nombre;$('#cMeta').value=S.cfg.meta;$('#cIgv').checked=S.cfg.igv;$('#cRc').value=num(S.cfg.rc)||0;$('#cIni').value=S.cfg.ini;$('#cFin').value=S.cfg.fin;renderBrand()}
 $('#cNombre').oninput=e=>{S.cfg.nombre=e.target.value;renderBrand();save()};
 $('#cMeta').oninput=e=>{const v=num(e.target.value);if(v>0&&v<100){S.cfg.meta=v;refresh()}};
 $('#cIgv').onchange=e=>{S.cfg.igv=e.target.checked;refresh()};
+$('#cRc').oninput=e=>{const v=num(e.target.value);if(v>=0&&v<=30){S.cfg.rc=v;refresh()}};
 $('#cIni').onchange=e=>{S.cfg.ini=e.target.value;renderBrand();save()};$('#cFin').onchange=e=>{S.cfg.fin=e.target.value;renderBrand();save()};
 $('#bLogo').onclick=()=>$('#fLogo').click();
 $('#fLogo').onchange=e=>{const f=e.target.files[0];if(!f)return;const img=new Image(),fr=new FileReader();fr.onload=()=>{img.onload=()=>{const c=document.createElement('canvas');c.width=c.height=160;const x=c.getContext('2d'),s=Math.min(img.width,img.height);x.drawImage(img,(img.width-s)/2,(img.height-s)/2,s,s,0,0,160,160);S.cfg.logo=c.toDataURL('image/png');renderBrand();save()};img.src=fr.result};fr.readAsDataURL(f);e.target.value=''};
@@ -464,7 +514,7 @@ $('#fLogo').onchange=e=>{const f=e.target.files[0];if(!f)return;const img=new Im
 let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),3200)}
 function refresh(){renderResumen();updIns();updRec();updVen();save()}
 function renderAll(){renderBrand();renderIns();renderRec();renderVen();renderResumen();save()}
-function route(){const t=(location.hash||'#resumen').slice(1);const v=['resumen','insumos','recetas','ventas','carga'].includes(t)?t:'resumen';$$('section[data-tab]').forEach(s=>s.classList.toggle('on',s.dataset.tab===v));$$('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.t===v))}
+function route(){const t=(location.hash||'#resumen').slice(1);const v=['resumen','insumos','recetas','ventas','carga'].includes(t)?t:'resumen';$$('section[data-tab]').forEach(s=>s.classList.toggle('on',s.dataset.tab===v));if(v==='ventas')renderVen();$$('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.t===v))}
 window.addEventListener('hashchange',route);
 $$('#nav a').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();try{history.replaceState(null,'','#'+a.dataset.t)}catch(_){location.hash=a.dataset.t}route()}));
 /* ---------- sesión ---------- */
