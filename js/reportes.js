@@ -138,7 +138,7 @@ function calcularReportes() {
   const alerta = (num(S.cfg.alerta) || 35) / 100;
   const sobreAlerta = menu
     .filter((x) => x.fc > alerta)
-    .map((x) => ({ ...x, sugerido: sugerido(x.costo) }))
+    .map((x) => ({ ...x, carta: x.precioNeto * impF(), sugNeto: x.costo / meta(), sugerido: sugerido(x.costo) }))
     .sort((a, b) => b.fc - a.fc);
 
   const sinCosto = agrupar(
@@ -375,11 +375,12 @@ function renderReportes() {
   <section class="card" id="r-alertas">
     <h2>Alertas de control</h2>
     <h3 style="margin:12px 0 8px">Platos sobre ${pct(R.alerta)} de food cost <span class="tag ${R.sobreAlerta.length ? "bad" : "ok"}">${R.sobreAlerta.length}</span></h3>
+    <p class="hint">Precio neto = sin IGV ni recargo al consumo. Neto sugerido = costo ÷ meta. Carta sugerida = neto sugerido con IGV y recargo, redondeado a S/ 0.50.</p>
     ${
       R.sobreAlerta.length
         ? tabla(
-            [{ t: "Plato" }, { t: "Vendidos", n: 1 }, { t: "Precio neto", n: 1 }, { t: "Costo", n: 1 }, { t: "FC", n: 1 }, { t: `Precio sugerido (${S.cfg.meta}%)`, n: 1 }],
-            R.sobreAlerta.map((x) => `<tr><td>${esc(x.plato)}</td><td class="n">${f2(x.cant)}</td><td class="n">${money(x.precioNeto)}</td><td class="n">${money(x.costo)}</td><td class="n loss">${pct(x.fc)}</td><td class="n">${money(x.sugerido)}</td></tr>`),
+            [{ t: "Plato" }, { t: "Vendidos", n: 1 }, { t: "Precio carta", n: 1 }, { t: "Precio neto", n: 1 }, { t: "Costo", n: 1 }, { t: "FC", n: 1 }, { t: `Neto sugerido (${S.cfg.meta}%)`, n: 1 }, { t: "Carta sugerida", n: 1 }],
+            R.sobreAlerta.map((x) => `<tr><td>${esc(x.plato)}</td><td class="n">${f2(x.cant)}</td><td class="n">${money(x.carta)}</td><td class="n">${money(x.precioNeto)}</td><td class="n">${money(x.costo)}</td><td class="n loss">${pct(x.fc)}</td><td class="n">${money(x.sugNeto)}</td><td class="n"><b>${money(x.sugerido)}</b></td></tr>`),
           )
         : '<p class="hint">Ningún plato pasa la alerta.</p>'
     }
@@ -469,8 +470,8 @@ function exportarReportes(R) {
     ],
     [
       "Sobre alerta",
-      [["Plato", "Vendidos", "Precio neto", "Costo", "FC %", "Precio sugerido"]].concat(
-        R.sobreAlerta.map((x) => [x.plato, r2(x.cant), r2(x.precioNeto), r2(x.costo), p1(x.fc), x.sugerido]),
+      [["Plato", "Vendidos", "Precio carta", "Precio neto", "Costo", "FC %", "Neto sugerido", "Carta sugerida (con IGV y RC)"]].concat(
+        R.sobreAlerta.map((x) => [x.plato, r2(x.cant), r2(x.carta), r2(x.precioNeto), r2(x.costo), p1(x.fc), r2(x.sugNeto), x.sugerido]),
       ),
     ],
     [
