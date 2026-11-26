@@ -545,10 +545,18 @@ function totales() {
 }
 
 /* ---------- 5. pantallas: marca ---------- */
+/* Iniciales del restaurante para el logo por defecto: "Liberty Bistró" -> "LB" */
+const iniciales = (n) =>
+  String(n || "")
+    .split(/[\s–-]+/)
+    .filter((w) => /^[A-ZÁÉÍÓÚÑ]/.test(w))
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("") || "FC";
 function renderBrand() {
   $("#logo").innerHTML = S.cfg.logo
     ? `<img src="${S.cfg.logo}" alt="Logo">`
-    : `<svg viewBox="0 0 56 56" width="50" height="50" aria-label="Logo"><circle cx="28" cy="28" r="26" fill="#1F5B43"/><path d="M14 40c4-12 24-12 28 0" fill="#F2B705"/><text x="28" y="31" text-anchor="middle" font-family="Poppins,sans-serif" font-weight="700" font-size="17" fill="#fff">MC</text></svg>`;
+    : `<svg viewBox="0 0 56 56" width="50" height="50" aria-label="Logo"><circle cx="28" cy="28" r="26" fill="#1F5B43"/><path d="M14 40c4-12 24-12 28 0" fill="#F2B705"/><text x="28" y="31" text-anchor="middle" font-family="Poppins,sans-serif" font-weight="700" font-size="17" fill="#fff">${esc(iniciales(S.cfg.nombre))}</text></svg>`;
   $("#subName").textContent = S.cfg.nombre;
   document.title = "Food Cost – " + (S.cfg.nombre.split("–")[0].trim() || "Restaurante");
   $("#foot").textContent = `${S.cfg.nombre} · Período ${fmtD(S.cfg.ini)} al ${fmtD(S.cfg.fin)}`;

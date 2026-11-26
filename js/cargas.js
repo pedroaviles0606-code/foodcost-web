@@ -278,13 +278,25 @@ function aplicarRecetas(lista) {
     Object.assign(r, { cod: x.cod, nom: x.nom, cat: x.familia || x.area, precio: x.precio, ing: [] });
     x.ing.forEach((l) => {
       const b = lineaABase(l);
+      // Mismo insumo, pero solo si la unidad coincide. Si la receta lo usa en otra
+      // unidad (ej. Burrata por unidad y en el maestro por kilo), se usa una ficha aparte.
       let i = insPorNombre.get(norm(l.insumo));
+      if (i && i.uni !== b.uni) {
+        const nomU = `${l.insumo} (${b.uni})`;
+        i = insPorNombre.get(norm(nomU));
+        if (!i) {
+          i = { id: nid(), cod: "", nom: nomU, cat: "Desde recetas", uni: b.uni, costo: +b.costo.toFixed(4), merma: 0, ii: 0, co: 0, fi: 0 };
+          S.ins.push(i);
+          insPorNombre.set(norm(nomU), i);
+          nuevasIns++;
+        }
+      }
       if (!i) {
         i = { id: nid(), cod: "", nom: l.insumo, cat: "Desde recetas", uni: b.uni, costo: +b.costo.toFixed(4), merma: 0, ii: 0, co: 0, fi: 0 };
         S.ins.push(i);
         insPorNombre.set(norm(l.insumo), i);
         nuevasIns++;
-      } else if (!i.costo && b.costo) i.costo = +b.costo.toFixed(4);
+      } else if (b.costo > 0) i.costo = +b.costo.toFixed(4); // el costeo trae el precio más reciente
       r.ing.push({ id: nid(), iid: i.id, q: +b.cantidad.toFixed(5) });
     });
   });
@@ -352,6 +364,6 @@ function renderEstadoDatos() {
     ["Días de venta", dias.length ? `${dias.length} (${fmtD(dias[0])} al ${fmtD(dias[dias.length - 1])})` : "—"],
     ["Compras", fc.length ? `${fc.length} líneas (${fmtD(fc[0])} al ${fmtD(fc[fc.length - 1])})` : "—"],
   ]
-    .map(([a, b]) => `<div class="kpi"><small>${a}</small><b style="font-size:18px">${b}</b></div>`)
+    .map(([a, b]) => `<div class="kpi"><small>${a}</small><b style="font-size:18px;white-space:normal">${b}</b></div>`)
     .join("");
 }
