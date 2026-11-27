@@ -111,7 +111,7 @@ function calcularReportes() {
   let menu = agrupar(
     lineasMenu,
     (l) => l._r.id,
-    (l) => ({ plato: l._r.nom, familia: l.subgrupo, costo: l._c, cant: 0, venta: 0 }),
+    (l) => ({ plato: l._r.nom, familia: l.subgrupo, costo: l._c, precioCarta: num(l._r.precio) || 0, cant: 0, venta: 0 }),
     (a, l) => {
       a.cant += l.cantidad;
       a.venta += l.neto;
@@ -136,10 +136,15 @@ function calcularReportes() {
 
   /* ---------- 3. Alertas ---------- */
   const alerta = (num(S.cfg.alerta) || 35) / 100;
+  // Alertas con el precio de la carta (como el reporte de costos), no con el promedio cobrado
   const sobreAlerta = menu
-    .filter((x) => x.fc > alerta)
-    .map((x) => ({ ...x, carta: x.precioNeto * impF(), sugNeto: x.costo / meta(), sugerido: sugerido(x.costo) }))
-    .sort((a, b) => b.fc - a.fc);
+    .map((x) => {
+      const carta = x.precioCarta || x.precioNeto * impF();
+      const netoCarta = carta / impF();
+      return { ...x, carta, netoCarta, fcCarta: x.costo / netoCarta, sugNeto: x.costo / meta(), sugerido: sugerido(x.costo) };
+    })
+    .filter((x) => x.fcCarta > alerta)
+    .sort((a, b) => b.fcCarta - a.fcCarta);
 
   const sinCosto = agrupar(
     ventas.filter((l) => !l._c && l.neto > 0 && !NO_MENU.includes(norm(l.subgrupo))),
@@ -375,12 +380,12 @@ function renderReportes() {
   <section class="card" id="r-alertas">
     <h2>Alertas de control</h2>
     <h3 style="margin:12px 0 8px">Platos sobre ${pct(R.alerta)} de food cost <span class="tag ${R.sobreAlerta.length ? "bad" : "ok"}">${R.sobreAlerta.length}</span></h3>
-    <p class="hint">Precio neto = sin IGV ni recargo al consumo. Neto sugerido = costo ÷ meta. Carta sugerida = neto sugerido con IGV y recargo, redondeado a S/ 0.50.</p>
+    <p class="hint">Precio carta y neto carta salen del costeo de recetas (neto = sin IGV ni recargo al consumo). Neto cobrado es el promedio real del paloteo, ya con descuentos y cortesías. El FC se calcula sobre el neto carta. Neto sugerido = costo ÷ meta; carta sugerida = neto sugerido con IGV y recargo, redondeado a S/ 0.50.</p>
     ${
       R.sobreAlerta.length
         ? tabla(
-            [{ t: "Plato" }, { t: "Vendidos", n: 1 }, { t: "Precio carta", n: 1 }, { t: "Precio neto", n: 1 }, { t: "Costo", n: 1 }, { t: "FC", n: 1 }, { t: `Neto sugerido (${S.cfg.meta}%)`, n: 1 }, { t: "Carta sugerida", n: 1 }],
-            R.sobreAlerta.map((x) => `<tr><td>${esc(x.plato)}</td><td class="n">${f2(x.cant)}</td><td class="n">${money(x.carta)}</td><td class="n">${money(x.precioNeto)}</td><td class="n">${money(x.costo)}</td><td class="n loss">${pct(x.fc)}</td><td class="n">${money(x.sugNeto)}</td><td class="n"><b>${money(x.sugerido)}</b></td></tr>`),
+            [{ t: "Plato" }, { t: "Vendidos", n: 1 }, { t: "Precio carta", n: 1 }, { t: "Neto carta", n: 1 }, { t: "Neto cobrado", n: 1 }, { t: "Costo", n: 1 }, { t: "FC", n: 1 }, { t: `Neto sugerido (${S.cfg.meta}%)`, n: 1 }, { t: "Carta sugerida", n: 1 }],
+            R.sobreAlerta.map((x) => `<tr><td>${esc(x.plato)}</td><td class="n">${f2(x.cant)}</td><td class="n">${money(x.carta)}</td><td class="n">${money(x.netoCarta)}</td><td class="n">${money(x.precioNeto)}</td><td class="n">${money(x.costo)}</td><td class="n loss">${pct(x.fcCarta)}</td><td class="n">${money(x.sugNeto)}</td><td class="n"><b>${money(x.sugerido)}</b></td></tr>`),
           )
         : '<p class="hint">Ningún plato pasa la alerta.</p>'
     }
@@ -470,8 +475,8 @@ function exportarReportes(R) {
     ],
     [
       "Sobre alerta",
-      [["Plato", "Vendidos", "Precio carta", "Precio neto", "Costo", "FC %", "Neto sugerido", "Carta sugerida (con IGV y RC)"]].concat(
-        R.sobreAlerta.map((x) => [x.plato, r2(x.cant), r2(x.carta), r2(x.precioNeto), r2(x.costo), p1(x.fc), r2(x.sugNeto), x.sugerido]),
+      [["Plato", "Vendidos", "Precio carta", "Neto carta", "Neto cobrado", "Costo", "FC %", "Neto sugerido", "Carta sugerida (con IGV y RC)"]].concat(
+        R.sobreAlerta.map((x) => [x.plato, r2(x.cant), r2(x.carta), r2(x.netoCarta), r2(x.precioNeto), r2(x.costo), p1(x.fcCarta), r2(x.sugNeto), x.sugerido]),
       ),
     ],
     [
